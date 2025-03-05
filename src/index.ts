@@ -13,6 +13,28 @@
 
 export default {
   async fetch(request, env, ctx): Promise<Response> {
-    return new Response('Hello from Terry!');
+    const ipCandidates = [
+      request.headers.get('cf-connecting-ip'),
+      request.headers.get('x-real-ip'),
+      ...(request.headers.get('x-forwarded-for')?.split(',') ?? []),
+    ]
+    const ip = ipCandidates.filter((ip) => !!ip)[0]
+    if (!ip) {
+      return new Response('No IP found', { status: 500 })
+    }
+
+    // noinspection SpellCheckingInspection
+    const country = request.headers.get('cf-ipcountry')
+    const response = {
+      ip,
+      country,
+    }
+    return new Response(
+      JSON.stringify(response),
+      {
+        headers: {
+          'content-type': 'application/json',
+        },
+      });
   },
 } satisfies ExportedHandler<Env>;
